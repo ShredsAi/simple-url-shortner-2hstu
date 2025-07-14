@@ -25,7 +25,7 @@ public class InfrastructureAnalyticsServiceClient implements ApplicationOutputPo
     private final String analyticsServiceUrl;
 
     public InfrastructureAnalyticsServiceClient(
-            @Value("${analytics.service.url}") String analyticsServiceUrl) {
+            @Value("${external.services.analytics-service.url}") String analyticsServiceUrl) {
         this.analyticsServiceUrl = analyticsServiceUrl;
         this.restTemplate = new RestTemplate();
     }

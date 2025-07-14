@@ -3,7 +3,9 @@ package ai.shreds.infrastructure.external_services;
 import java.time.Duration;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.stereotype.Service;
 import ai.shreds.domain.ports.DomainOutputPortCacheService;
 
@@ -40,10 +42,15 @@ public class InfrastructureRedisCacheServiceImpl implements DomainOutputPortCach
 
     @Override
     public void batchCacheURLs(Map<String, String> mappings) {
-        redisTemplate.executePipelined(connection -> {
+        redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
             mappings.forEach((code, url) -> {
-                byte[] key = redisTemplate.getKeySerializer().serialize(buildCacheKey(code));
-                byte[] value = redisTemplate.getValueSerializer().serialize(url);
+                @SuppressWarnings("unchecked")
+                RedisSerializer<String> keySerializer = (RedisSerializer<String>) redisTemplate.getKeySerializer();
+                @SuppressWarnings("unchecked")
+                RedisSerializer<String> valueSerializer = (RedisSerializer<String>) redisTemplate.getValueSerializer();
+                
+                byte[] key = keySerializer.serialize(buildCacheKey(code));
+                byte[] value = valueSerializer.serialize(url);
                 connection.setEx(key, defaultTtl.getSeconds(), value);
             });
             return null;

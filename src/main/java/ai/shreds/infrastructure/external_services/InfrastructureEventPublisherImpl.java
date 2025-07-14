@@ -7,8 +7,8 @@ import ai.shreds.application.ports.ApplicationOutputPortEventPublisher;
 import ai.shreds.shared.dtos.SharedURLCreatedEventDTO;
 import ai.shreds.shared.dtos.SharedURLUpdatedEventDTO;
 import ai.shreds.shared.dtos.SharedURLDeletedEventDTO;
-import ai.shreds.shared.SharedBulkOperationCompletedEventDTO;
-import ai.shreds.shared.SharedURLValidationRequestEventDTO;
+import ai.shreds.shared.dtos.SharedBulkOperationCompletedEventDTO;
+import ai.shreds.shared.dtos.SharedURLValidationRequestEventDTO;
 import ai.shreds.infrastructure.utils.InfrastructureRetryUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,19 +19,19 @@ public class InfrastructureEventPublisherImpl implements ApplicationOutputPortEv
     private final RabbitTemplate rabbitTemplate;
     private final InfrastructureRetryUtil retryUtil;
 
-    @Value("${url.events.created.exchange}")
+    @Value("${rabbitmq.exchanges.url-created:url.events.created}")
     private String urlCreatedExchange;
 
-    @Value("${url.events.updated.exchange}")
+    @Value("${rabbitmq.exchanges.url-updated:url.events.updated}")
     private String urlUpdatedExchange;
 
-    @Value("${url.events.deleted.exchange}")
+    @Value("${rabbitmq.exchanges.url-deleted:url.events.deleted}")
     private String urlDeletedExchange;
 
-    @Value("${url.events.bulk.exchange}")
+    @Value("${rabbitmq.exchanges.bulk-operation:url.events.bulk}")
     private String bulkOperationExchange;
 
-    @Value("${url.events.validation.exchange}")
+    @Value("${rabbitmq.exchanges.validation-request:url.validation.request}")
     private String validationRequestExchange;
 
     public InfrastructureEventPublisherImpl(RabbitTemplate rabbitTemplate, InfrastructureRetryUtil retryUtil) {

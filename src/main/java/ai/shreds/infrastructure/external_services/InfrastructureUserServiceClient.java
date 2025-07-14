@@ -18,7 +18,7 @@ public class InfrastructureUserServiceClient implements ApplicationOutputPortUse
     private final String userServiceUrl;
 
     public InfrastructureUserServiceClient(
-            @Value("${user.service.url}") String userServiceUrl,
+            @Value("${external.services.user-service.url:http://localhost:8091}") String userServiceUrl,
             InfrastructureCircuitBreakerUtil circuitBreaker) {
         this.userServiceUrl = userServiceUrl;
         this.circuitBreaker = circuitBreaker;
@@ -42,7 +42,7 @@ public class InfrastructureUserServiceClient implements ApplicationOutputPortUse
     }
 
     @Override
-    public boolean checkQuotaAvailability(String userId, Integer requestedCount) {
+    public Boolean checkQuotaAvailability(String userId, Integer requestedCount) {
         try {
             return circuitBreaker.execute(() -> {
                 var response = restTemplate.postForObject(
@@ -51,11 +51,28 @@ public class InfrastructureUserServiceClient implements ApplicationOutputPortUse
                     QuotaCheckResponse.class,
                     userId
                 );
-                return response != null && response.isAllowed();
+                return Boolean.valueOf(response != null && response.isAllowed());
             });
         } catch (Exception e) {
             log.error("Error checking quota availability for userId: {}", userId, e);
-            return false; // Fail-safe approach
+            return Boolean.FALSE; // Fail-safe approach with Boolean object
+        }
+    }
+
+    // Removed @Override annotation since this method is not in the interface
+    public boolean validateUser(String userId) {
+        try {
+            return circuitBreaker.execute(() -> {
+                var response = restTemplate.getForObject(
+                    userServiceUrl + "/users/{userId}/validate",
+                    Map.class,
+                    userId
+                );
+                return response != null && Boolean.TRUE.equals(response.get("valid"));
+            });
+        } catch (Exception e) {
+            log.error("Error validating user: {}", userId, e);
+            return false;
         }
     }
 

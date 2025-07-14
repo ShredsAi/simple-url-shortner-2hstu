@@ -264,11 +264,11 @@
   <logger name="io.undertow" level="WARN"/>
   
   <!-- Actuator and Management -->
-  <logger name="org.springframework.boot.actuate" level="INFO"/>
-  <logger name="org.springframework.boot.actuate.audit" level="INFO"/>
-  <logger name="org.springframework.boot.actuate.endpoint" level="INFO"/>
-  <logger name="org.springframework.boot.actuate.health" level="INFO"/>
-  <logger name="org.springframework.boot.actuate.metrics" level="INFO"/>
+  <logger name="org.springframework.boot.actuator" level="INFO"/>
+  <logger name="org.springframework.boot.actuator.audit" level="INFO"/>
+  <logger name="org.springframework.boot.actuator.endpoint" level="INFO"/>
+  <logger name="org.springframework.boot.actuator.health" level="INFO"/>
+  <logger name="org.springframework.boot.actuator.metrics" level="INFO"/>
   
   <!-- Testing (should not appear in production) -->
   <logger name="org.springframework.test" level="DEBUG"/>

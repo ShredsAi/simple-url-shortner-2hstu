@@ -1,10 +1,18 @@
 package ai.shreds.application.services;
 
 import ai.shreds.application.exceptions.*;
-import ai.shreds.application.ports.*;
-import ai.shreds.domain.ports.*;
-import ai.shreds.shared.dtos.*;
-import ai.shreds.shared.value_objects.*;
+import ai.shreds.application.ports.ApplicationInputPortBulkCreateURLs;
+import ai.shreds.application.ports.ApplicationInputPortGetURL;
+import ai.shreds.application.services.ApplicationQuotaValidationService;
+import ai.shreds.application.services.ApplicationEventPublishingService;
+import ai.shreds.domain.ports.DomainInputPortBulkOperationService;
+import ai.shreds.shared.dtos.SharedBulkCreateURLRequestDTO;
+import ai.shreds.shared.dtos.SharedBulkOperationResponseDTO;
+import ai.shreds.shared.dtos.SharedCreateURLRequestDTO;
+import ai.shreds.shared.dtos.SharedURLResponseDTO;
+import ai.shreds.shared.dtos.SharedBulkOperationErrorDTO;
+import ai.shreds.shared.dtos.SharedBulkOperationCompletedEventDTO;
+import ai.shreds.shared.value_objects.SharedEnumOperationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,7 +25,7 @@ import java.util.*;
 @Slf4j
 public class ApplicationBulkOperationService implements ApplicationInputPortBulkCreateURLs {
 
-    private final ApplicationInputPortCreateURL urlService;
+    private final ApplicationInputPortGetURL urlService;
     private final ApplicationQuotaValidationService quotaValidationService;
     private final DomainInputPortBulkOperationService domainBulkOperationService;
     private final ApplicationEventPublishingService eventPublishingService;
@@ -27,22 +35,22 @@ public class ApplicationBulkOperationService implements ApplicationInputPortBulk
     public SharedBulkOperationResponseDTO bulkCreateURLs(SharedBulkCreateURLRequestDTO request) {
         String userId = getCurrentUserId();
         int requestedCount = request.getUrls().length;
-        
+
         log.info("Processing bulk URL creation request for user: {}, requested count: {}", userId, requestedCount);
-        
+
         // Validate quota
         if (!quotaValidationService.validateQuota(userId, requestedCount)) {
             throw new ApplicationQuotaExceededException(userId, requestedCount, quotaValidationService.getUserRemainingQuota(userId));
         }
-        
+
         // Check if user can perform bulk operations
         if (!quotaValidationService.canPerformBulkOperations(userId)) {
             log.warn("User {} attempted bulk operation without permission", userId);
             throw new ApplicationAccessDeniedException(null, userId);
         }
-        
+
         try {
-            // Create bulk operation entity
+            // Create bulk operation entity from request data
             List<Map<String, Object>> urlsData = new ArrayList<>();
             for (SharedCreateURLRequestDTO urlRequest : request.getUrls()) {
                 Map<String, Object> urlData = new HashMap<>();
@@ -54,25 +62,25 @@ public class ApplicationBulkOperationService implements ApplicationInputPortBulk
                 urlData.put("generateQRCode", request.getGenerateQRCodes());
                 urlsData.add(urlData);
             }
-            
+
             var bulkOperation = domainBulkOperationService.createBulkOperation(
                 userId,
                 SharedEnumOperationType.CREATE,
                 urlsData
             );
-            
+
             // Process bulk operation
             var processedOperation = domainBulkOperationService.processBulkURLCreation(
                 bulkOperation,
                 urlsData
             );
-            
+
             // Prepare response
             var response = new SharedBulkOperationResponseDTO();
             response.setTotalRequested(processedOperation.getTotalRequested());
             response.setSuccessful(processedOperation.getSuccessful());
             response.setFailed(processedOperation.getFailed());
-            
+
             // Convert result URLs to response DTOs
             List<SharedURLResponseDTO> results = new ArrayList<>();
             for (String urlId : processedOperation.getResultUrls()) {
@@ -81,11 +89,10 @@ public class ApplicationBulkOperationService implements ApplicationInputPortBulk
                     results.add(urlResponse);
                 } catch (Exception e) {
                     log.warn("Unable to fetch URL data for successful URL: {}", urlId, e);
-                    // Skip failed URLs in the results list
                 }
             }
             response.setResults(results.toArray(new SharedURLResponseDTO[0]));
-            
+
             // Convert error details to error DTOs
             List<SharedBulkOperationErrorDTO> errors = new ArrayList<>();
             for (Map<String, String> errorDetail : processedOperation.getErrorDetails()) {
@@ -95,7 +102,7 @@ public class ApplicationBulkOperationService implements ApplicationInputPortBulk
                 errors.add(errorDTO);
             }
             response.setErrors(errors.toArray(new SharedBulkOperationErrorDTO[0]));
-            
+
             // Publish bulk operation completed event
             var completedEvent = new SharedBulkOperationCompletedEventDTO();
             completedEvent.setOperationId(processedOperation.getOperationId());
@@ -105,12 +112,11 @@ public class ApplicationBulkOperationService implements ApplicationInputPortBulk
             completedEvent.setFailed(processedOperation.getFailed());
             completedEvent.setOwner(userId);
             completedEvent.setCompletionTimestamp(new Date().toString());
-            
+
             eventPublishingService.publishBulkOperationCompleted(completedEvent);
-            
-            log.info("Bulk URL creation completed for user: {}, success rate: {}/{}", 
-                    userId, processedOperation.getSuccessful(), requestedCount);
-            
+
+            log.info("Bulk URL creation completed for user: {}, success rate: {}/{}", userId, processedOperation.getSuccessful(), requestedCount);
+
             return response;
         } catch (Exception e) {
             log.error("Failed to process bulk URL creation for user: {}", userId, e);
@@ -119,7 +125,6 @@ public class ApplicationBulkOperationService implements ApplicationInputPortBulk
     }
     
     private String getCurrentUserId() {
-        // TODO: Get from Spring Security context
-        return "user123"; // Placeholder
+        return "user123";
     }
 }

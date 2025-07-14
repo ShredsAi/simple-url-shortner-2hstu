@@ -1,0 +1,226 @@
+# Test Configuration for URL Management Service
+server:
+  port: 0  # Random port for tests
+
+spring:
+  application:
+    name: url-management-service-test
+  
+  # Data Configuration - will be overridden by TestContainers
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/test-urlservice
+      database: test-urlservice
+      auto-index-creation: true
+      
+    redis:
+      host: localhost
+      port: 6379
+      password: 
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+          max-wait: 2000ms
+      database: 0
+
+  # RabbitMQ Configuration - will be overridden by TestContainers
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    connection-timeout: 5000
+    requested-heartbeat: 30
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 3
+        multiplier: 10
+        max-interval: 10000
+    listener:
+      simple:
+        acknowledge-mode: auto
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          multiplier: 2
+          max-interval: 10000
+
+  # Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000 # 1 hour for tests
+      cache-null-values: false
+      key-prefix: "test-url-service:"
+      use-key-prefix: true
+
+  # Jackson Configuration
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+      accept-single-value-as-array: true
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'
+    time-zone: UTC
+
+  # Validation Configuration
+  validation:
+    enabled: true
+
+# Management and Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+    info:
+      enabled: true
+    metrics:
+      enabled: true
+  health:
+    mongo:
+      enabled: true
+    redis:
+      enabled: true
+    rabbit:
+      enabled: true
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    ai.shreds: DEBUG
+    org.springframework.data: WARN
+    org.springframework.amqp: WARN
+    org.mongodb.driver: WARN
+    io.lettuce: WARN
+    org.testcontainers: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Application Specific Configuration
+url:
+  shortening:
+    algorithm: base62
+    minLength: 6
+    maxLength: 10
+    charset: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    collision-retry-attempts: 3
+  
+  validation:
+    enabled: true
+    timeout: 10s
+    retry-attempts: 2
+    security-score-threshold: 70
+  
+  cache:
+    ttl: 3600 # 1 hour
+    popular-urls-ttl: 7200 # 2 hours for popular URLs
+    preload-popular-count: 100
+  
+  expiration:
+    default-days: 30
+    max-days: 90
+    cleanup-batch-size: 100
+    cleanup-interval: 3600 # 1 hour
+  
+  custom-alias:
+    min-length: 4
+    max-length: 32
+    allowed-characters: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+    reservation-ttl: 300 # 5 minutes
+  
+  bulk:
+    max-batch-size: 10
+    processing-timeout: 30s
+  
+  qr-code:
+    default-size: 300
+    default-error-correction: M
+    default-format: png
+    cache-ttl: 3600 # 1 hour
+
+# External Services Configuration - Mocked in tests
+external:
+  services:
+    qr-code:
+      url: http://localhost:8090
+      timeout: 5s
+      retry:
+        max-attempts: 2
+        initial-interval: 1s
+        multiplier: 2
+    
+    user-service:
+      url: http://localhost:8091
+      timeout: 3s
+      circuit-breaker:
+        failure-threshold: 3
+        reset-timeout: 30s
+        half-open-requests: 2
+    
+    analytics-service:
+      url: http://localhost:8092
+      timeout: 2s
+      async: true
+    
+    config-service:
+      url: http://localhost:8093
+      timeout: 3s
+      cache-ttl: 300s
+      circuit-breaker:
+        failure-threshold: 2
+        reset-timeout: 60s
+
+# RabbitMQ Exchange and Queue Configuration
+rabbitmq:
+  exchanges:
+    url-created: test.url.events.created
+    url-updated: test.url.events.updated
+    url-deleted: test.url.events.deleted
+    bulk-operation: test.url.events.bulk
+    validation-request: test.url.validation.request
+  
+  queues:
+    validation-completed: test.url.validation.completed
+    dead-letter: test.url.events.dlq
+  
+  routing-keys:
+    url-created: url.created
+    url-updated: url.updated
+    url-deleted: url.deleted
+    bulk-completed: bulk.completed
+    validation-request: validation.request
+    validation-completed: validation.completed
+
+# Security Configuration
+security:
+  reserved-aliases:
+    - admin
+    - api
+    - test
+    - demo

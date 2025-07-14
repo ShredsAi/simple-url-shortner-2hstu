@@ -3,8 +3,8 @@ package ai.shreds.application.ports;
 import ai.shreds.shared.dtos.SharedURLCreatedEventDTO;
 import ai.shreds.shared.dtos.SharedURLUpdatedEventDTO;
 import ai.shreds.shared.dtos.SharedURLDeletedEventDTO;
-import ai.shreds.shared.SharedBulkOperationCompletedEventDTO;
-import ai.shreds.shared.SharedURLValidationRequestEventDTO;
+import ai.shreds.shared.dtos.SharedBulkOperationCompletedEventDTO;
+import ai.shreds.shared.dtos.SharedURLValidationRequestEventDTO;
 
 public interface ApplicationOutputPortEventPublisher {
 
