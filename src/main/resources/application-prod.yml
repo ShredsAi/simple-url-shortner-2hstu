@@ -1,0 +1,221 @@
+# Production Environment Configuration
+spring:
+  data:
+    # MongoDB Production Configuration
+    mongodb:
+      uri: ${MONGODB_URI}
+      database: ${MONGODB_DATABASE:urlservice}
+      maxConnectionPoolSize: 50
+      write-concern: MAJORITY
+      read-preference: PRIMARY_PREFERRED
+      retry-writes: true
+      socket-timeout: 5000
+      connect-timeout: 10000
+      max-wait-time: 120000
+      heartbeat-frequency: 10000
+      ssl-enabled: ${MONGODB_SSL_ENABLED:false}
+    
+    # Redis Production Configuration
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+      ssl: ${REDIS_SSL_ENABLED:false}
+      timeout: 5000ms
+      database: ${REDIS_DATABASE:0}
+      lettuce:
+        pool:
+          max-active: 30
+          max-idle: 15
+          min-idle: 8
+          max-wait: 5000ms
+          time-between-eviction-runs: 60s
+  
+  # RabbitMQ Production Configuration
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    ssl:
+      enabled: ${RABBITMQ_SSL_ENABLED:false}
+      key-store: ${RABBITMQ_KEYSTORE:}
+      key-store-password: ${RABBITMQ_KEYSTORE_PASSWORD:}
+      trust-store: ${RABBITMQ_TRUSTSTORE:}
+      trust-store-password: ${RABBITMQ_TRUSTSTORE_PASSWORD:}
+      algorithm: ${RABBITMQ_SSL_ALGORITHM:TLSv1.2}
+    connection-timeout: 30000
+    requested-heartbeat: 60
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    cache:
+      channel:
+        size: ${RABBITMQ_CHANNEL_CACHE_SIZE:25}
+        checkout-timeout: ${RABBITMQ_CHANNEL_CHECKOUT_TIMEOUT:10000}
+    template:
+      retry:
+        enabled: true
+        initial-interval: 2000
+        multiplier: 2
+        max-attempts: 5
+        max-interval: 20000
+    listener:
+      simple:
+        concurrency: ${RABBITMQ_LISTENER_CONCURRENCY:5}
+        max-concurrency: ${RABBITMQ_LISTENER_MAX_CONCURRENCY:10}
+        prefetch: ${RABBITMQ_LISTENER_PREFETCH:250}
+        acknowledge-mode: manual
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          initial-interval: 5000
+          max-attempts: 3
+          multiplier: 2
+          max-interval: 20000
+
+  # Cache Production Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: ${CACHE_TTL:86400000}
+      key-prefix: "url-service:"
+
+  # HTTP Client Configuration
+  mvc:
+    async:
+      request-timeout: 30s
+
+# Tomcat Configuration in Production
+server:
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    max-connections: 8192
+    accept-count: 100
+    max-http-form-post-size: 2MB
+    connection-timeout: 20s
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: 2KB
+
+# Logging Configuration for Production
+logging:
+  level:
+    root: WARN
+    ai.shreds: INFO
+    org.springframework.web: WARN
+    org.springframework.data: WARN
+    org.springframework.amqp: WARN
+    org.mongodb.driver: WARN
+    io.lettuce.core: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId},%X{spanId}] %logger{36} - %msg%n"
+  file:
+    name: ${LOG_PATH:/app/logs}/url-service-prod.log
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 3GB
+      clean-history-on-start: false
+
+# Management Endpoints for Production
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      group:
+        liveness:
+          include: livenessstate,diskSpace
+        readiness:
+          include: readinessstate,mongo,redis,rabbit
+  metrics:
+    tags:
+      application: url-management-service
+      env: production
+    export:
+      prometheus:
+        enabled: true
+        step: 60s
+
+# URL Service Production Configuration
+url:
+  validation:
+    enabled: true
+    timeout: 30s
+    security-score-threshold: 70
+    retry-attempts: 3
+  
+  cache:
+    ttl: ${URL_CACHE_TTL:86400} # 24 hours in seconds
+    popular-urls-ttl: ${POPULAR_URL_CACHE_TTL:604800} # 7 days
+    preload-popular-count: ${PRELOAD_POPULAR_COUNT:1000}
+  
+  expiration:
+    default-days: ${DEFAULT_EXPIRATION_DAYS:365}
+    max-days: ${MAX_EXPIRATION_DAYS:1095}
+    cleanup-batch-size: ${EXPIRATION_CLEANUP_BATCH:1000}
+    cleanup-interval: ${EXPIRATION_CLEANUP_INTERVAL:3600}
+  
+  custom-alias:
+    min-length: 4
+    max-length: 32
+    reservation-ttl: ${ALIAS_RESERVATION_TTL:300}
+  
+  bulk:
+    max-batch-size: ${BULK_MAX_BATCH_SIZE:100}
+    processing-timeout: ${BULK_PROCESSING_TIMEOUT:300s}
+
+# External Services Production Configuration
+external:
+  services:
+    qr-code:
+      url: ${QR_CODE_SERVICE_URL}
+      timeout: ${QR_CODE_SERVICE_TIMEOUT:10s}
+      retry:
+        max-attempts: ${QR_CODE_SERVICE_RETRY_ATTEMPTS:3}
+    user-service:
+      url: ${USER_SERVICE_URL}
+      timeout: ${USER_SERVICE_TIMEOUT:5s}
+      circuit-breaker:
+        failure-threshold: ${USER_SERVICE_CIRCUIT_THRESHOLD:5}
+        reset-timeout: ${USER_SERVICE_CIRCUIT_RESET:30s}
+    analytics-service:
+      url: ${ANALYTICS_SERVICE_URL}
+      timeout: ${ANALYTICS_SERVICE_TIMEOUT:3s}
+      async: true
+    config-service:
+      url: ${CONFIG_SERVICE_URL}
+      timeout: ${CONFIG_SERVICE_TIMEOUT:5s}
+      cache-ttl: ${CONFIG_SERVICE_CACHE_TTL:300s}
+
+# Security Configuration in Production
+security:
+  require-ssl: true
+  headers:
+    xss-protection: 1; mode=block
+    cache-control: no-cache, no-store, max-age=0, must-revalidate
+    pragma: no-cache
+    expires: 0
+    content-type-options: nosniff
+    frame-options: DENY
+    content-security-policy: "default-src 'self'"
+    strict-transport-security: max-age=31536000; includeSubDomains
+
+# Production Feature Flags
+features:
+  production:
+    enable-metrics: true
+    enable-distributed-tracing: true
+    enable-health-monitoring: true
+    enable-automatic-url-expiration: true
+    slow-operation-threshold: 1000ms # 1 second threshold for production

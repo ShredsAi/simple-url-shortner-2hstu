@@ -1,0 +1,105 @@
+# Development Environment Configuration
+spring:
+  data:
+    # MongoDB Development Configuration
+    mongodb:
+      uri: mongodb://localhost:27017/urlservice_dev
+      database: urlservice_dev
+      auto-index-creation: true
+    
+    # Redis Development Configuration
+    redis:
+      host: localhost
+      port: 6379
+      password: 
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+  
+  # RabbitMQ Development Configuration
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    publisher-confirm-type: none # Simplified for dev environment
+    publisher-returns: true
+  
+  # Enable Development Tools
+  devtools:
+    restart:
+      enabled: true
+      additional-paths: src/main/java
+      exclude: static/**,public/**
+    livereload:
+      enabled: true
+
+# Logging Configuration for Development
+logging:
+  level:
+    root: INFO
+    ai.shreds: DEBUG
+    org.springframework.data: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.amqp: DEBUG
+    org.mongodb.driver: INFO
+    io.lettuce.core: DEBUG
+  file:
+    name: logs/url-service-dev.log
+
+# Management Endpoints for Development
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # Expose all endpoints in development
+  endpoint:
+    health:
+      show-details: always
+
+# URL Service Development Configuration
+url:
+  validation:
+    enabled: false # Disable security validation in development
+    timeout: 5s
+  
+  expiration:
+    default-days: 30 # Shorter expiration for dev
+  
+  cache:
+    ttl: 300 # 5 minutes in seconds for dev
+  
+  custom-alias:
+    reservation-ttl: 60 # 1 minute for development
+  
+  bulk:
+    max-batch-size: 10 # Smaller batch size for development and testing
+
+# External Services Mock Configuration
+external:
+  services:
+    qr-code:
+      url: http://localhost:8090
+      mock: true
+    user-service:
+      url: http://localhost:8091
+      mock: true
+    analytics-service:
+      url: http://localhost:8092
+      mock: true
+      async: false # Synchronous for easier debugging
+    config-service:
+      url: http://localhost:8093
+      mock: true
+
+# Development-specific Features
+features:
+  development:
+    mock-validation: true
+    auto-confirmation: true
+    debug-logging: true
+    trace-requests: true
+    slow-operation-threshold: 100ms # Lower threshold for dev environment

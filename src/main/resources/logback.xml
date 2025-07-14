@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <!-- Define properties for reuse -->
+  <property name="LOG_PATH" value="${LOG_PATH:-${java.io.tmpdir:-/tmp}}"/>
+  <property name="LOG_FILE" value="${LOG_FILE:-url-service}"/>
+  <property name="LOG_PATTERN_CONSOLE" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+  <property name="LOG_PATTERN_FILE" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId},%X{spanId}] %logger{36} - %msg%n"/>
+  <property name="LOG_PATTERN_JSON" value='{"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%level","thread":"%thread","logger":"%logger{36}","message":"%msg","traceId":"%X{traceId}","spanId":"%X{spanId}"}%n'/>
+  
+  <!-- Console Appender -->
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${LOG_PATTERN_CONSOLE}</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>ERROR</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>NEUTRAL</onMismatch>
+    </filter>
+  </appender>
+  
+  <!-- Async Console Appender for better performance -->
+  <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+    <appender-ref ref="CONSOLE"/>
+    <queueSize>512</queueSize>
+    <discardingThreshold>0</discardingThreshold>
+    <maxFlushTime>1000</maxFlushTime>
+    <neverBlock>false</neverBlock>
+  </appender>
+  
+  <!-- File Appender with Time-based Rolling -->
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/${LOG_FILE}.log</file>
+    <encoder>
+      <pattern>${LOG_PATTERN_FILE}</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_PATH}/${LOG_FILE}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>100MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>3GB</totalSizeCap>
+      <cleanHistoryOnStart>true</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+  
+  <!-- Async File Appender -->
+  <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+    <appender-ref ref="FILE"/>
+    <queueSize>1024</queueSize>
+    <discardingThreshold>20</discardingThreshold>
+    <maxFlushTime>1000</maxFlushTime>
+    <neverBlock>false</neverBlock>
+  </appender>
+  
+  <!-- Error File Appender -->
+  <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/${LOG_FILE}-error.log</file>
+    <encoder>
+      <pattern>${LOG_PATTERN_FILE}</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_PATH}/${LOG_FILE}-error-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>50MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>1GB</totalSizeCap>
+      <cleanHistoryOnStart>true</cleanHistoryOnStart>
+    </rollingPolicy>
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>ERROR</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+  </appender>
+  
+  <!-- JSON Appender for Production Monitoring -->
+  <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/${LOG_FILE}-json.log</file>
+    <encoder>
+      <pattern>${LOG_PATTERN_JSON}</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_PATH}/${LOG_FILE}-json-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>100MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <maxHistory>90</maxHistory>
+      <totalSizeCap>10GB</totalSizeCap>
+      <cleanHistoryOnStart>false</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+  
+  <!-- Async JSON Appender -->
+  <appender name="ASYNC_JSON" class="ch.qos.logback.classic.AsyncAppender">
+    <appender-ref ref="JSON_FILE"/>
+    <queueSize>2048</queueSize>
+    <discardingThreshold>0</discardingThreshold>
+    <maxFlushTime>1000</maxFlushTime>
+    <neverBlock>false</neverBlock>
+  </appender>
+  
+  <!-- Security Appender for Security Events -->
+  <appender name="SECURITY_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/${LOG_FILE}-security.log</file>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [SECURITY] [%thread] %-5level %logger{36} - %msg%n</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_PATH}/${LOG_FILE}-security-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>50MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <maxHistory>90</maxHistory>
+      <totalSizeCap>2GB</totalSizeCap>
+      <cleanHistoryOnStart>false</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+  
+  <!-- Performance Appender for Performance Monitoring -->
+  <appender name="PERFORMANCE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${LOG_PATH}/${LOG_FILE}-performance.log</file>
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [PERFORMANCE] [%thread] %logger{36} - %msg%n</pattern>
+      <charset>UTF-8</charset>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_PATH}/${LOG_FILE}-performance-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>100MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>3GB</totalSizeCap>
+      <cleanHistoryOnStart>true</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+  
+  <!-- Profile-specific configuration -->
+  <springProfile name="dev">
+    <root level="INFO">
+      <appender-ref ref="ASYNC_CONSOLE"/>
+      <appender-ref ref="ASYNC_FILE"/>
+    </root>
+    
+    <logger name="ai.shreds" level="DEBUG" additivity="false">
+      <appender-ref ref="ASYNC_CONSOLE"/>
+      <appender-ref ref="ASYNC_FILE"/>
+    </logger>
+    
+    <logger name="org.springframework.web" level="DEBUG" additivity="false">
+      <appender-ref ref="ASYNC_CONSOLE"/>
+      <appender-ref ref="ASYNC_FILE"/>
+    </logger>
+    
+    <logger name="org.springframework.data" level="DEBUG" additivity="false">
+      <appender-ref ref="ASYNC_CONSOLE"/>
+      <appender-ref ref="ASYNC_FILE"/>
+    </logger>
+  </springProfile>
+  
+  <springProfile name="prod">
+    <root level="WARN">
+      <appender-ref ref="ASYNC_FILE"/>
+      <appender-ref ref="ERROR_FILE"/>
+      <appender-ref ref="ASYNC_JSON"/>
+    </root>
+    
+    <logger name="ai.shreds" level="INFO" additivity="false">
+      <appender-ref ref="ASYNC_FILE"/>
+      <appender-ref ref="ERROR_FILE"/>
+      <appender-ref ref="ASYNC_JSON"/>
+    </logger>
+    
+    <logger name="ai.shreds.security" level="INFO" additivity="false">
+      <appender-ref ref="SECURITY_FILE"/>
+      <appender-ref ref="ASYNC_JSON"/>
+    </logger>
+    
+    <logger name="ai.shreds.performance" level="INFO" additivity="false">
+      <appender-ref ref="PERFORMANCE_FILE"/>
+      <appender-ref ref="ASYNC_JSON"/>
+    </logger>
+  </springProfile>
+  
+  <springProfile name="docker">
+    <root level="INFO">
+      <appender-ref ref="ASYNC_CONSOLE"/>
+      <appender-ref ref="ASYNC_JSON"/>
+    </root>
+    
+    <logger name="ai.shreds" level="INFO" additivity="false">
+      <appender-ref ref="ASYNC_CONSOLE"/>
+      <appender-ref ref="ASYNC_JSON"/>
+    </logger>
+  </springProfile>
+  
+  <!-- Default configuration (fallback) -->
+  <springProfile name="!dev & !prod & !docker">
+    <root level="INFO">
+      <appender-ref ref="ASYNC_CONSOLE"/>
+      <appender-ref ref="ASYNC_FILE"/>
+    </root>
+    
+    <logger name="ai.shreds" level="DEBUG" additivity="false">
+      <appender-ref ref="ASYNC_CONSOLE"/>
+      <appender-ref ref="ASYNC_FILE"/>
+    </logger>
+  </springProfile>
+  
+  <!-- Specific loggers -->
+  <logger name="org.springframework" level="INFO"/>
+  <logger name="org.springframework.boot" level="INFO"/>
+  <logger name="org.springframework.web" level="INFO"/>
+  <logger name="org.springframework.data" level="INFO"/>
+  <logger name="org.springframework.amqp" level="INFO"/>
+  <logger name="org.springframework.cloud" level="INFO"/>
+  <logger name="org.springframework.security" level="INFO"/>
+  <logger name="org.springframework.cache" level="INFO"/>
+  <logger name="org.springframework.scheduling" level="INFO"/>
+  <logger name="org.springframework.transaction" level="INFO"/>
+  <logger name="org.springframework.retry" level="INFO"/>
+  <logger name="org.springframework.aop" level="WARN"/>
+  <logger name="org.springframework.context" level="WARN"/>
+  <logger name="org.springframework.beans" level="WARN"/>
+  
+  <!-- Database and External Services -->
+  <logger name="org.mongodb.driver" level="WARN"/>
+  <logger name="org.mongodb.driver.cluster" level="WARN"/>
+  <logger name="org.mongodb.driver.connection" level="WARN"/>
+  <logger name="org.mongodb.driver.protocol" level="WARN"/>
+  <logger name="com.mongodb" level="WARN"/>
+  <logger name="io.lettuce.core" level="WARN"/>
+  <logger name="io.lettuce.core.protocol" level="WARN"/>
+  <logger name="com.rabbitmq" level="WARN"/>
+  <logger name="org.apache.http" level="WARN"/>
+  <logger name="org.apache.http.wire" level="WARN"/>
+  <logger name="org.apache.http.headers" level="WARN"/>
+  
+  <!-- Third-party libraries -->
+  <logger name="com.fasterxml.jackson" level="WARN"/>
+  <logger name="org.hibernate.validator" level="WARN"/>
+  <logger name="io.micrometer" level="WARN"/>
+  <logger name="io.github.resilience4j" level="INFO"/>
+  <logger name="org.mapstruct" level="WARN"/>
+  <logger name="org.reflections" level="WARN"/>
+  <logger name="sun.net.www.protocol.http" level="WARN"/>
+  <logger name="sun.net.www.protocol.https" level="WARN"/>
+  
+  <!-- JVM and System -->
+  <logger name="sun.rmi" level="WARN"/>
+  <logger name="javax.management" level="WARN"/>
+  <logger name="org.apache.catalina" level="WARN"/>
+  <logger name="org.apache.coyote" level="WARN"/>
+  <logger name="org.apache.tomcat" level="WARN"/>
+  <logger name="org.eclipse.jetty" level="WARN"/>
+  <logger name="org.xnio" level="WARN"/>
+  <logger name="io.undertow" level="WARN"/>
+  
+  <!-- Actuator and Management -->
+  <logger name="org.springframework.boot.actuate" level="INFO"/>
+  <logger name="org.springframework.boot.actuate.audit" level="INFO"/>
+  <logger name="org.springframework.boot.actuate.endpoint" level="INFO"/>
+  <logger name="org.springframework.boot.actuate.health" level="INFO"/>
+  <logger name="org.springframework.boot.actuate.metrics" level="INFO"/>
+  
+  <!-- Testing (should not appear in production) -->
+  <logger name="org.springframework.test" level="DEBUG"/>
+  <logger name="org.springframework.boot.test" level="DEBUG"/>
+  <logger name="org.mockito" level="DEBUG"/>
+  <logger name="org.junit" level="DEBUG"/>
+  <logger name="org.testcontainers" level="DEBUG"/>
+  
+  <!-- Custom application loggers -->
+  <logger name="ai.shreds.adapter" level="INFO"/>
+  <logger name="ai.shreds.application" level="INFO"/>
+  <logger name="ai.shreds.domain" level="INFO"/>
+  <logger name="ai.shreds.infrastructure" level="INFO"/>
+  <logger name="ai.shreds.shared" level="INFO"/>
+  
+  <!-- URL Management specific loggers -->
+  <logger name="ai.shreds.application.services.ApplicationURLService" level="INFO"/>
+  <logger name="ai.shreds.application.services.ApplicationBulkOperationService" level="INFO"/>
+  <logger name="ai.shreds.application.services.ApplicationEventPublishingService" level="INFO"/>
+  <logger name="ai.shreds.domain.services.DomainURLShorteningService" level="INFO"/>
+  <logger name="ai.shreds.infrastructure.external_services" level="INFO"/>
+  <logger name="ai.shreds.infrastructure.repositories" level="INFO"/>
+  
+  <!-- Performance monitoring -->
+  <logger name="ai.shreds.performance" level="INFO" additivity="false">
+    <appender-ref ref="PERFORMANCE_FILE"/>
+  </logger>
+  
+  <!-- Security monitoring -->
+  <logger name="ai.shreds.security" level="INFO" additivity="false">
+    <appender-ref ref="SECURITY_FILE"/>
+  </logger>
+  
+  <!-- Shutdown hook -->
+  <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook">
+    <delay>1000</delay>
+  </shutdownHook>
+  
+  <!-- Context listener for better error handling -->
+  <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+    <resetJUL>true</resetJUL>
+  </contextListener>
+  
+  <!-- Status listener for configuration debugging -->
+  <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+  
+</configuration>

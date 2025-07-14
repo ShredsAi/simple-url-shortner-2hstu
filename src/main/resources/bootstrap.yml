@@ -1,0 +1,125 @@
+# Bootstrap Configuration for Spring Cloud Config
+spring:
+  application:
+    name: url-management-service
+  
+  # Spring Cloud Config Configuration
+  cloud:
+    config:
+      uri: ${CONFIG_SERVER_URI:http://localhost:8888}
+      profile: ${SPRING_PROFILES_ACTIVE:dev}
+      label: ${CONFIG_SERVER_LABEL:main}
+      fail-fast: ${CONFIG_SERVER_FAIL_FAST:false}
+      enabled: ${CONFIG_SERVER_ENABLED:false}
+      
+      # Security Configuration for Config Server
+      username: ${CONFIG_SERVER_USERNAME:}
+      password: ${CONFIG_SERVER_PASSWORD:}
+      
+      # Retry Configuration
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 6
+        max-interval: 2000
+        multiplier: 1.1
+      
+      # Request Configuration
+      request:
+        connect-timeout: 10000
+        read-timeout: 60000
+      
+      # Discovery Configuration (when using service discovery)
+      discovery:
+        enabled: ${CONFIG_DISCOVERY_ENABLED:false}
+        service-id: ${CONFIG_SERVER_SERVICE_ID:config-server}
+      
+      # Health Check Configuration
+      health:
+        enabled: true
+        time-to-live: 5m
+      
+      # Override Configuration
+      override:
+        none: true
+        system-properties: false
+        allow-override: false
+      
+      # Headers for Config Server Authentication
+      headers:
+        X-Config-Token: ${CONFIG_SERVER_TOKEN:}
+        X-Service-Name: url-management-service
+        X-Service-Version: 1.0.0-SNAPSHOT
+  
+  # Profiles Configuration
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+    include: ${SPRING_PROFILES_INCLUDE:}
+  
+  # Bootstrap Context Configuration
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: false
+    banner-mode: console
+    log-startup-info: true
+    register-shutdown-hook: true
+    web-application-type: servlet
+
+# Logging Configuration for Bootstrap Phase
+logging:
+  level:
+    org.springframework.cloud.config: INFO
+    org.springframework.boot.context.config: INFO
+    org.springframework.context.annotation: WARN
+    org.springframework.boot.autoconfigure: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management Configuration for Bootstrap
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh,restart,configprops,env
+  endpoint:
+    health:
+      enabled: true
+      show-details: when-authorized
+    refresh:
+      enabled: true
+    restart:
+      enabled: ${MANAGEMENT_RESTART_ENABLED:false}
+    configprops:
+      enabled: true
+    env:
+      enabled: true
+
+# Security Configuration for Bootstrap
+security:
+  basic:
+    enabled: ${SECURITY_BASIC_ENABLED:false}
+  user:
+    name: ${SECURITY_USER_NAME:admin}
+    password: ${SECURITY_USER_PASSWORD:}
+    roles: ${SECURITY_USER_ROLES:ADMIN,ACTUATOR}
+
+# Encryption Configuration
+encrypt:
+  key: ${ENCRYPT_KEY:}
+  key-store:
+    location: ${ENCRYPT_KEYSTORE_LOCATION:}
+    password: ${ENCRYPT_KEYSTORE_PASSWORD:}
+    alias: ${ENCRYPT_KEYSTORE_ALIAS:}
+    secret: ${ENCRYPT_KEYSTORE_SECRET:}
+  rsa:
+    algorithm: ${ENCRYPT_RSA_ALGORITHM:OAEP}
+    strong: ${ENCRYPT_RSA_STRONG:false}
+    salt: ${ENCRYPT_RSA_SALT:deadbeef}
+
+# Server Configuration for Bootstrap Context
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
